@@ -1,0 +1,96 @@
+Sub FromTabletoCSVs()
+
+Call Split_Data
+MsgBox "Data is split into separate tabs based on the first column"
+Call RemoveFirstColumn
+MsgBox "First columns are now removed from every tab"
+MsgBox "Execution of next Macros will take up to 30 Sec. Please be patient and dont close Excel. Please remember to save file to Onedrive as xlsm"
+Call SaveAsCSV
+MsgBox "We are done!"
+
+End Sub
+Sub Split_Data()
+Dim L As Long
+    Dim DS As Worksheet
+    Dim VCL, X As Integer
+    Dim XCL As Long
+    Dim MARY As Variant
+    Dim title As String
+    Dim titlerow As Integer
+    Application.ScreenUpdating = False
+    VCL = Application.InputBox(prompt:="Which column would you like to filter by?", title:="Filter column", Type:=1)
+    Set DS = ActiveSheet
+    L = DS.Cells(DS.Rows.Count, VCL).End(xlUp).Row
+    title = "A1"
+    titlerow = DS.Range(title).Cells(1).Row
+    XCL = DS.Columns.Count
+    DS.Cells(3, XCL) = "Unique"
+    For X = 2 To L
+        On Error Resume Next
+        If DS.Cells(X, VCL) <> "" And Application.WorksheetFunction.Match(DS.Cells(X, VCL), DS.Columns(XCL), 0) = 0 Then
+            DS.Cells(DS.Rows.Count, XCL).End(xlUp).Offset(1) = DS.Cells(X, VCL)
+        End If
+    Next
+    MARY = Application.WorksheetFunction.Transpose(DS.Columns(XCL).SpecialCells(xlCellTypeConstants))
+    DS.Columns(XCL).Clear
+    For X = 2 To UBound(MARY)
+        DS.Range(title).AutoFilter field:=VCL, Criteria1:=MARY(X) & ""
+        If Not Evaluate("=ISREF('" & MARY(X) & "'!A1)") Then
+            Sheets.Add(after:=Worksheets(Worksheets.Count)).Name = MARY(X) & ""
+        Else
+            Sheets(MARY(X) & "").Move after:=Worksheets(Worksheets.Count)
+        End If
+        DS.Range("A" & titlerow & ":A" & L).EntireRow.Copy Sheets(MARY(X) & "").Range("A1")
+    Next
+    DS.AutoFilterMode = False
+    DS.Activate
+    Application.ScreenUpdating = True
+End Sub
+Sub RemoveFirstColumn()
+
+Dim ws As Worksheet
+
+For Each ws In ActiveWorkbook.Worksheets
+ws.Columns("A:A").EntireColumn.Delete
+
+Next ws
+
+End Sub
+Sub SaveAsCSV()
+    Application.ScreenUpdating = False
+
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    Dim wbNew As Workbook
+    Dim fullPath As String
+    Dim counter As Integer
+
+    Set wb = ActiveWorkbook
+    ' loop through each worksheet
+    For Each ws In wb.Worksheets
+        ' run code only for visible sheets
+        If ws.Visible = xlSheetVisible Then
+            ' copy the worksheet to a new workbook
+            ws.Copy
+            ' select the new workbook
+            Set wbNew = ActiveWorkbook
+            ' generate a full path for the new file including CSV extension
+            fullPath = wb.Path & "\" & Left(wb.Name, InStrRev(wb.Name, ".") - 1) & "_" & ws.Name & ".csv"
+            ' disable alerts in case of overwrite confirmation
+            Application.DisplayAlerts = False
+            ' save the new workbook as a CSV
+            wbNew.SaveAs FileName:=fullPath, FileFormat:=xlCSV, Local:=True
+            ' re-activate alerts
+            Application.DisplayAlerts = True
+            ' close the new workbook
+            wbNew.Close SaveChanges:=False
+            ' increase counter for the information message
+            counter = counter + 1
+        End If
+    Next ws
+
+    ' pop an information message
+    MsgBox counter & IIf(counter > 1, " worksheets", " worksheets") & " exported.", vbInformation, "Export Worksheets"
+
+    Application.ScreenUpdating = True
+End Sub
