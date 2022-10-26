@@ -1,0 +1,17 @@
+Sub Insert_Rows()
+
+Column_Number = Int(InputBox("Number of the Column on Which the Cell Values Depend: "))
+
+Above_or_Below = Int(InputBox("Enter 0 to Insert Rows Above Each Row." + vbNewLine + "OR" + vbNewLine + "Enter 1 to Insert Rows Below Each Row."))
+
+Dim Count As Integer
+Count = 0
+
+For i = 1 To Selection.Rows.Count
+    For j = 1 To Int(Selection.Cells(i + Count, Column_Number))
+        Selection.Cells(i + Above_or_Below + Count, Column_Number).EntireRow.Insert
+        Count = Count + 1
+    Next j
+Next i
+
+End Sub
